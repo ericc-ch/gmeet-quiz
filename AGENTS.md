@@ -20,3 +20,4 @@
 - **Frontend:** Import HTML files directly in `Bun.serve()`, use HTML imports for React/CSS/Tailwind (no Vite)
 - **Error Handling:** TypeScript strict mode enforces null/undefined checks
 - **Operators:** Always use `??` (nullish coalescing) over `||` (logical OR) for default values
+- **Variable Naming:** Never use single letter variables except for well-known cases like `i` in for loops
