@@ -6,43 +6,20 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { LastAction } from "./components/last-action.tsx";
 import { createContext } from "./lib/browser.ts";
 import { usePageStore } from "./stores/app.ts";
 
 const context = await createContext();
 const queryClient = new QueryClient();
 
-const formatter = new Intl.DateTimeFormat("en-US", {
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-});
-
-interface ActionLog {
-  timestamp: string;
-  action: string;
-  description?: string;
-}
-
 function Main() {
   const renderer = useRenderer();
   const queryClient = useQueryClient();
   const setSelectedPage = usePageStore((state) => state.setSelectedPage);
-
-  const [lastAction, setLastAction] = useState<ActionLog>({
-    timestamp: formatter.format(new Date()),
-    action: "Initialized",
-  });
+  const logAction = usePageStore((state) => state.logAction);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const logAction = (action: string, description?: string) => {
-    setLastAction({
-      timestamp: formatter.format(new Date()),
-      action,
-      description,
-    });
-  };
 
   const pagesQuery = useQuery({
     queryKey: ["pages"],
@@ -143,16 +120,12 @@ function Main() {
 
       <box style={{ border: true }}>
         <text>
-          <strong>Controls:</strong>
+          <strong>Controls: </strong>
           ↑/↓: Navigate | Enter: Select | n: New Page | r: Refresh | q: Quit
         </text>
       </box>
 
-      <box style={{ border: true }}>
-        <text>
-          {lastAction.timestamp} | {lastAction.action}
-        </text>
-      </box>
+      <LastAction />
     </box>
   );
 }

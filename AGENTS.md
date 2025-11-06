@@ -16,7 +16,7 @@
 - **TypeScript:** Strict mode enabled (`strict: true`, `noFallthroughCasesInSwitch`, `noUncheckedIndexedAccess`, `noImplicitOverride`)
 - **Imports:** Use ES modules (`import`/`export`), `.ts` extensions allowed, verbatim module syntax
 - **Formatting:** Follow tsconfig.json bundler mode conventions
-- **Naming:** Use `main.ts` for entry points, not `index.ts`
+- **Naming:** Use `main.ts` for entry points, not `index.ts`. Always use kebab-case for file names (e.g., `last-action.tsx`, not `LastAction.tsx`)
 - **Testing:** Use `import { test, expect } from "bun:test"`
 - **Frontend:** Import HTML files directly in `Bun.serve()`, use HTML imports for React/CSS/Tailwind (no Vite)
 - **Error Handling:** TypeScript strict mode enforces null/undefined checks
