@@ -2,9 +2,10 @@
 
 ## Build/Test Commands
 - **Run:** `bun src/main.ts` or `bun --hot src/main.ts` (with hot reload)
-- **Test:** `bun test` (all tests) or `bun test <file.test.ts>` (single test)
+- **Test:** `bun test` (automated tests only) or `bun test <file.test.ts>` (single test)
 - **Build:** `bun build <file.ts>` or `bun build <file.html>`
 - **Install:** `bun install`
+- **Note:** Do not test interactive applications - ask the user to test the implementation manually
 
 ## Runtime & APIs
 - Use **Bun** instead of Node.js (no `node`, `npm`, `express`, `dotenv`, `ws`, `better-sqlite3`, `pg`, `ioredis`, `execa`)
