@@ -16,6 +16,7 @@ interface ActionLog {
 interface PageStore {
   selectedPage: Page | undefined;
   setSelectedPage: (page: Page) => void;
+
   lastAction: ActionLog;
   logAction: (action: string, description?: string) => void;
 }
