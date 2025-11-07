@@ -12,6 +12,11 @@ Bun.serve({
 
 Bun.serve({
   routes: {
+    "/src/assets/*": async (req) => {
+      const path = new URL(req.url).pathname;
+      const file = Bun.file(path.slice(1)); // Remove leading slash
+      return new Response(file);
+    },
     "/*": html,
   },
   port: 4000,

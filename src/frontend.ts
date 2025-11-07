@@ -73,7 +73,9 @@ async function loadWalkFrames() {
     deadTexture = deadFrame;
     backgroundTexture = background;
     boltTexture = bolt;
-    console.log("Walk frames, dead sprite, background, and bolt loaded successfully");
+    console.log(
+      "Walk frames, dead sprite, background, and bolt loaded successfully",
+    );
   } catch (error) {
     console.error("Failed to load walk frames:", error);
   }
@@ -231,19 +233,12 @@ function updatePlayerSprite(playerName: string, player: Player) {
         playerSprite.stop();
         playerSprite.textures = [boltTexture];
         playerSprite.gotoAndStop(0);
-        
-        // Scale the bolt to be big
-        const boltScale = 120 / Math.max(playerSprite.width, playerSprite.height);
-        playerSprite.scale.set(boltScale * 2);
-        
+
         // After a few frames, switch to dead sprite
         setTimeout(() => {
           if (deadTexture) {
             playerSprite.textures = [deadTexture];
             playerSprite.gotoAndStop(0);
-            // Reset scale for dead sprite
-            const deadScale = 60 / Math.max(playerSprite.width, playerSprite.height);
-            playerSprite.scale.set(deadScale * 1.8);
           }
         }, 500); // Show bolt for 500ms
       }
@@ -251,9 +246,6 @@ function updatePlayerSprite(playerName: string, player: Player) {
       // Restore walk animation
       playerSprite.textures = walkFrames;
       playerSprite.play();
-      // Reset scale for walk animation
-      const walkScale = 60 / Math.max(playerSprite.width, playerSprite.height);
-      playerSprite.scale.set(walkScale * 1.8);
     }
   } else {
     // Update fallback circle
@@ -447,7 +439,7 @@ eventSource.addEventListener("load-level", (event) => {
 
   if (data.type === "load-level") {
     updateLevelDisplay(data.payload.level);
-    
+
     // Update all player sprites and reinitialize movement
     data.payload.players.forEach((player) => {
       updatePlayerSprite(player.name, player);

@@ -8,9 +8,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.29",
     "@opentui/core": "^0.1.36",
     "@opentui/react": "^0.1.36",
     "@tanstack/react-query": "^5.90.7",
+    "ai": "^5.0.89",
     "hono": "^4.10.4",
     "pixi.js": "^8.14.0",
     "playwright": "^1.56.1",

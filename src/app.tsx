@@ -142,6 +142,7 @@ function Main() {
         >
           <text style={{ bg: "blue" }}>
             <strong>{JSON.stringify(gameState)}</strong>
+            <strong>{JSON.stringify(gameState.players.entries())}</strong>
           </text>
         </box>
       </box>

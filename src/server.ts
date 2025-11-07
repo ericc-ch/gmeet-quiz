@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { useGameStore } from "./stores/game.ts";
 import { getLevel, getTotalLevels } from "./lib/levels.ts";
+import { evaluateAnswer } from "./lib/ai.ts";
 import { cors } from "hono/cors";
 
 export const server = new Hono();
@@ -33,10 +34,12 @@ async function startGameLoop() {
         // Dramatic delay (1 second)
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Judge answer
-        const isCorrect =
-          currentGuess.answer.toLowerCase() ===
-          gameStore.currentLevel.correctAnswer.toLowerCase();
+        // Judge answer using AI
+        const isCorrect = await evaluateAnswer(
+          gameStore.currentLevel.question,
+          gameStore.currentLevel.correctAnswer,
+          currentGuess.answer
+        );
 
         // Send result
         gameStore.emitEvent({
