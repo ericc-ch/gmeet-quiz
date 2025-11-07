@@ -64,9 +64,22 @@ export async function startGame() {
 
             // Check if message is an answer (starts with !)
             if (msg.message.startsWith("!")) {
+              // Add to guessing queue for game loop
+              gameStore.addToGuessingQueue({
+                playerName: msg.user,
+                answer: msg.message.slice(1)
+              });
+              
+              // Add event for immediate SSE broadcast
               gameStore.addEvent({
                 type: "answer-submitted",
                 payload: { user: msg.user, answer: msg.message.slice(1) },
+              });
+              
+              // Update queue event for immediate broadcast
+              gameStore.addEvent({
+                type: "queue-updated",
+                payload: { queue: [...gameStore.guessingQueue] }
               });
             } else {
               gameStore.addEvent({
@@ -75,6 +88,11 @@ export async function startGame() {
               });
             }
           });
+
+          console.log(
+            "Current state",
+            JSON.stringify(useGameStore.getState(), null, 2),
+          );
 
           logAction(
             "New messages found",
@@ -98,132 +116,4 @@ export async function startGame() {
   }
 }
 
-export async function processGameEvents() {
-  const gameStore = useGameStore.getState();
 
-  while (true) {
-    const event = gameStore.getNextEvent();
-
-    if (event) {
-      switch (event.type) {
-        case "answer-submitted": {
-          const { user, answer } = event.payload;
-
-          // Add to guessing queue
-          gameStore.addToGuessingQueue({ playerName: user, answer });
-
-          // Send queue updated event
-          gameStore.addEvent({
-            type: "queue-updated",
-            payload: { queue: [...gameStore.guessingQueue] },
-          });
-
-          // Start judging if game is active and not already judging
-          if (gameStore.gameStatus === "ACTIVE") {
-            await processGuessingQueue();
-          }
-          break;
-        }
-      }
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-}
-
-async function processGuessingQueue() {
-  const gameStore = useGameStore.getState();
-
-  while (
-    gameStore.guessingQueue.length > 0 &&
-    gameStore.gameStatus === "ACTIVE"
-  ) {
-    const currentGuess = gameStore.guessingQueue[0];
-
-    if (!currentGuess) break;
-
-    // Send start judging event
-    gameStore.addEvent({
-      type: "start-judging",
-      payload: { playerName: currentGuess.playerName },
-    });
-
-    // Wait for walk animation (2 seconds)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Check if answer is correct
-    const isCorrect =
-      currentGuess.answer.toLowerCase() ===
-      gameStore.currentLevel.correctAnswer.toLowerCase();
-
-    if (isCorrect) {
-      // Send correct result
-      gameStore.addEvent({
-        type: "judge-result",
-        payload: { playerName: currentGuess.playerName, result: "correct" },
-      });
-
-      // Wait for success animation (1 second)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Clear queue and transition to next level
-      gameStore.clearGuessingQueue();
-      await transitionToNextLevel();
-      break;
-    } else {
-      // Send wrong result
-      gameStore.addEvent({
-        type: "judge-result",
-        payload: { playerName: currentGuess.playerName, result: "wrong" },
-      });
-
-      // Mark player as dead for this level
-      gameStore.updatePlayer(currentGuess.playerName, { isAlive: false });
-
-      // Wait for die animation (1 second)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Remove this guess from queue and continue
-      gameStore.guessingQueue.shift();
-      gameStore.addEvent({
-        type: "queue-updated",
-        payload: { queue: [...gameStore.guessingQueue] },
-      });
-    }
-  }
-}
-
-async function transitionToNextLevel() {
-  const gameStore = useGameStore.getState();
-
-  // Set game status to transition
-  gameStore.setGameStatus("LEVEL_TRANSITION");
-
-  // Load next level (for now, just increment level number)
-  const nextLevel = {
-    levelNumber: gameStore.currentLevel.levelNumber + 1,
-    correctAnswer: "", // This would be set based on level data
-  };
-  gameStore.setCurrentLevel(nextLevel);
-
-  // Revive all players
-  const allPlayers = Array.from(gameStore.players.values());
-  allPlayers.forEach((player) => {
-    gameStore.updatePlayer(player.name, { isAlive: true });
-  });
-
-  // Send load level event
-  gameStore.addEvent({
-    type: "load-level",
-    payload: {
-      level: nextLevel,
-      players: Array.from(gameStore.players.values()),
-    },
-  });
-
-  // Wait for transition animation (3 seconds)
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
-  // Set game status back to active
-  gameStore.setGameStatus("ACTIVE");
-}
