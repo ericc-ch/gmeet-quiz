@@ -13,7 +13,7 @@ interface ActionLog {
   description?: string;
 }
 
-interface PageStore {
+interface UIStore {
   selectedPage: Page | undefined;
   setSelectedPage: (page: Page) => void;
 
@@ -21,7 +21,7 @@ interface PageStore {
   logAction: (action: string, description?: string) => void;
 }
 
-export const usePageStore = create<PageStore>()((set) => ({
+export const useUIStore = create<UIStore>()((set) => ({
   selectedPage: undefined,
   setSelectedPage: (page) => set({ selectedPage: page }),
 

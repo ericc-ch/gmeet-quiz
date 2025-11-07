@@ -1,19 +1,31 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { processGameEvents } from "./lib/game.ts";
+import { useGameStore } from "./stores/game.ts";
 
-const app = new Hono();
-let id = 0;
+export const server = new Hono();
 
-app.get("/events", async (c) => {
+server.get("/", (c) => {
+  return c.text("GMeet Quiz Server is running.");
+});
+
+server.get("/events", async (c) => {
   return streamSSE(c, async (stream) => {
     while (true) {
-      const message = `It is ${new Date().toISOString()}`;
-      await stream.writeSSE({
-        data: message,
-        event: "time-update",
-        id: String(id++),
-      });
-      await stream.sleep(1000);
+      const event = useGameStore.getState().getNextEvent();
+
+      console.log("Processing event:", event);
+
+      if (event) {
+        await stream.writeSSE({
+          data: JSON.stringify(event),
+          event: event.type,
+        });
+      } else {
+        await stream.sleep(100);
+      }
     }
   });
 });
+
+processGameEvents();

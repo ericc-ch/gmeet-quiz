@@ -8,7 +8,9 @@ import {
 import { useEffect, useState } from "react";
 import { LastAction } from "./components/last-action.tsx";
 import { createContext } from "./lib/browser.ts";
-import { usePageStore } from "./stores/app.ts";
+import { startGame } from "./lib/game.ts";
+import { useUIStore } from "./stores/ui.ts";
+import { useGameStore } from "./stores/game.ts";
 
 const context = await createContext();
 const queryClient = new QueryClient();
@@ -16,8 +18,11 @@ const queryClient = new QueryClient();
 function Main() {
   const renderer = useRenderer();
   const queryClient = useQueryClient();
-  const setSelectedPage = usePageStore((state) => state.setSelectedPage);
-  const logAction = usePageStore((state) => state.logAction);
+  const setSelectedPage = useUIStore((state) => state.setSelectedPage);
+  const selectedPage = useUIStore((state) => state.selectedPage);
+  const logAction = useUIStore((state) => state.logAction);
+
+  const gameState = useGameStore((state) => state);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -87,6 +92,9 @@ function Main() {
       case "n":
         handleCreateNewPage();
         break;
+      case "g":
+        startGame();
+        break;
       case "q":
         logAction("Quitting application");
         process.exit(0);
@@ -103,25 +111,46 @@ function Main() {
         height: "100%",
       }}
     >
-      {pagesQuery.isPending ? (
-        <text>Loading...</text>
-      ) : pagesQuery.isError ? (
-        <text>Error: {pagesQuery.error?.message}</text>
-      ) : (
-        <box style={{ border: true, flexGrow: 1 }}>
-          {pagesQuery.data?.map((page: any, index: number) => (
-            <text key={index}>
-              {index === selectedIndex ? "▶ " : "  "}
-              <strong>{index + 1}.</strong> {page.url()}
-            </text>
-          ))}
+      <box style={{ flexDirection: "row", flexGrow: 1 }}>
+        <box style={{ border: true, width: "30%" }}>
+          {pagesQuery.isPending ? (
+            <text>Loading...</text>
+          ) : pagesQuery.isError ? (
+            <text>Error: {pagesQuery.error?.message}</text>
+          ) : (
+            pagesQuery.data?.map((page: any, index: number) => (
+              <text
+                key={index}
+                style={{
+                  bg: page === selectedPage ? "blue" : undefined,
+                }}
+              >
+                {index === selectedIndex ? "▶ " : "  "}
+                <strong>{index + 1}.</strong> {page.url()}
+              </text>
+            ))
+          )}
         </box>
-      )}
+
+        <box
+          style={{
+            border: true,
+            flexGrow: 1,
+            flexDirection: "column",
+            padding: 1,
+          }}
+        >
+          <text style={{ bg: "blue" }}>
+            <strong>Game Status: {gameState.gameStatus}</strong>
+          </text>
+        </box>
+      </box>
 
       <box style={{ border: true }}>
         <text>
           <strong>Controls: </strong>
-          ↑/↓: Navigate | Enter: Select | n: New Page | r: Refresh | q: Quit
+          ↑/↓: Navigate | Enter: Select | n: New Page | r: Refresh | g: Start
+          Game | q: Quit
         </text>
       </box>
 

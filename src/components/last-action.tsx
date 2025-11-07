@@ -1,12 +1,12 @@
-import { usePageStore } from "../stores/app.ts";
+import { useUIStore } from "../stores/ui.ts";
 
 export function LastAction() {
-  const lastAction = usePageStore((state) => state.lastAction);
+  const lastAction = useUIStore((state) => state.lastAction);
 
   return (
     <box style={{ border: true }}>
       <text>
-        {lastAction.timestamp} | {lastAction.action}
+        {lastAction.timestamp} | {lastAction.action} | {lastAction.description}
       </text>
     </box>
   );
