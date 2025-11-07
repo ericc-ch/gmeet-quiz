@@ -1,97 +1,181 @@
-Here is the complete README document based on our refinements.
+# gmeet-quiz
 
----
+> a collaborative quiz game that runs inside google meet, where participants answer questions through chat while a 2d game world displays the action in real-time
 
-# AI-Assisted Game: Google Meet Quiz Adventure
+## features
 
-## 1. Project Overview
+- **real-time 2d visualization** using pixi.js
+- **ai-powered answer evaluation** using google gemini
+- **automated chat monitoring** via playwright browser automation
+- **sequential judging system** where players take turns answering
+- **visual feedback** with player sprites, animations, and chat bubbles
 
-This project is a collaborative quiz game designed to run inside a Google Meet. A host shares their screen, which shows a 2D game world. The 15 participants play by typing in the Google Meet chat. A Playwright bot reads the chat, a backend server manages game state, and the Pixi.js frontend renders the game.
+## getting started
 
-Participants are all on one team. They must collectively find one correct answer to a question to advance to the next "room" (level). Incorrect answers, submitted sequentially, will "kill" the player for that level.
+### prerequisites
 
-## 2. Core Components
+- [bun](https://bun.sh) runtime
+- chromium browser
+- google gemini api key
 
-### Backend (Node.js / Python)
+### installation
 
-- **Game State Machine:** Manages the core game state.
-- **WebSocket Server:** The single source of truth for the frontend.
-- **Playwright Bot:** Launches a headless browser, joins the Google Meet, and scrapes all chat messages.
+```bash
+bun install
+```
 
-### Frontend (Pixi.js)
+### configuration
 
-- **Render-Only:** This is a "dumb" client. It **must not** contain any game logic.
-- **WebSocket Client:** Connects to the backend server.
-- **Renderer:** Uses Pixi.js to render sprites (players, NPCs, levels) and play animations based _only_ on commands from the backend.
+create a `.env` file in the root directory:
 
-## 3. Game State Schema (Backend)
+```env
+GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
+```
 
-The backend must be the authoritative source of truth for the game. It will need to manage several key pieces of information:
+### running the game
 
-- **Game Status:** A variable to track the game's overall state. This will be either **`ACTIVE`** (level is running, answers are accepted) or **`LEVEL_TRANSITION`** (a cutscene is playing, input is ignored).
-- **Judging Lock:** A simple boolean flag (e.g., `is_judging_loop_active`). This is critical. It acts as a "lock" to ensure the judging loop only runs one at a time, preventing multiple players from being judged simultaneously.
-- **Level Information:** The backend needs to know the **`current_level`** and its associated data, most importantly the **`correct_answer`** for that level.
-- **Player Data:** A collection (like a dictionary or map) that stores information about each player, keyed by their Google Meet username. This should track their **`display_name`** and whether they are **`is_alive`** for the current level.
-- **Guessing Queue:** An ordered list or array. When a player submits an answer, they are added to this queue as an object containing their **`player_name`** and their **`answer`**.
+```bash
+# start with hot reload
+bun run start
 
-## 4. Game Flow & Logic (Backend Responsibility)
+# or run directly
+bun src/main.tsx
+```
 
-This section describes the core logic the backend must execute.
+the application runs on:
 
-### 4.1. Player Management & Answer Queuing
+- **http://localhost:4000** - frontend game display
+- **http://localhost:3000** - backend api with sse endpoints
 
-The backend must listen for all chat messages coming from the Playwright bot.
+## how to play
 
-- **For _any_ message:** Check the username. If this player isn't in the **Player Data** collection yet, create a new entry for them and send a `NEW_PLAYER` event.
-- **If it's regular chat (no `!`):** Send a `SHOW_CHAT_BUBBLE` event so the frontend can display it.
-- **If it's an answer (`!<answer>`):**
-  - `if game_status is ACTIVE:`
-    - Add the `{ player_name, answer }` to the end of the **`guessing_queue`**.
-    - Send a `QUEUE_UPDATED` event to the frontend so it can animate the player getting in line.
-    - **Trigger the loop:** Check if the **`judging_lock`** is `false`. If it is, start the _Sequential Judging Loop_ (see 4.2).
+1. **setup**: start the application and navigate to a google meet tab using the terminal ui
+2. **select tab**: use ↑/↓ to navigate, enter to select the google meet page
+3. **start game**: press `g` to begin monitoring chat messages
+4. **join**: players are automatically detected when they type in chat
+5. **answer questions**: players submit answers with `!<answer>` format
+6. **watch the action**: view the game display at http://localhost:4000
 
-### 4.2. Sequential Judging Loop (Core Logic)
+### terminal ui controls
 
-This is the main "game" loop. It should be designed as a process that can "pause" and "resume."
+| key   | action                                 |
+| ----- | -------------------------------------- |
+| ↑/↓   | navigate browser tabs                  |
+| enter | select browser tab for game monitoring |
+| n     | create new browser page                |
+| r     | refresh page list                      |
+| g     | start game monitoring on selected page |
+| q     | quit application                       |
+| f12   | toggle console                         |
 
-- `Set the judging_lock to true.` (So this loop can't be triggered again while it's running).
-- `while the guessing_queue is not empty:`
-  - `Get the first guess (player, answer) from the front of the queue.`
-  - `Send the START_JUDGING event` (telling the frontend to animate this player walking to the judge).
-  - `PAUSE the backend logic` (e.g., `sleep`, `setTimeout`) for a set time (e.g., 2 seconds) to match the frontend's walk animation.
-  - `Check if the player's answer is correct:`
-    - **If CORRECT:**
-      - `Send JUDGE_RESULT ("correct") event.`
-      - `PAUSE backend` for a "success" animation (e.g., 1 second).
-      - `Empty the guessing_queue` (the level is over).
-      - `Call the Level Transition logic` (see 4.3).
-      - `break` (exit this `while` loop).
-    - **If WRONG:**
-      - `Send JUDGE_RESULT ("wrong") event.`
-      - `Update the player's status in Player Data to is_alive = false.`
-      - `PAUSE backend` for a "die" animation (e.g., 1 second).
-      - (The `while` loop will now automatically continue to the next person in the queue).
-- `Set the judging_lock to false.` (The loop is finished and is ready to be triggered again).
+## game mechanics
 
-### 4.3. Level Transition Logic
+### answering questions
 
-This logic is called after a correct answer.
+players submit answers by typing in google meet chat with the `!` prefix:
 
-- `Set game_status to LEVEL_TRANSITION.`
-- `Load the data for the next level` (e.g., `level_2`, new `correct_answer`).
-- `Loop through all players in Player Data and set their is_alive status back to true.` (Revive everyone).
-- `Send the LOAD_LEVEL event` to the frontend with all the new level data and the full (revived) player list.
-- `PAUSE backend` for a transition animation (e.g., 3 seconds).
-- `Set game_status back to ACTIVE.` (The new level is now ready to accept guesses).
+```
+!malware
+!secure
+!ddos
+```
 
-## 5. WebSocket API (Backend -> Frontend)
+### judging system
 
-The frontend should be a "dumb client" that only handles commands from the backend. The backend must send the following messages:
+1. answers are queued in order of submission
+2. each player is judged sequentially with ai evaluation
+3. correct answers advance everyone to the next level
+4. incorrect answers "kill" that player for the current level
+5. all players are revived when advancing to new levels
 
-- **`FULL_STATE_SYNC(state)`:** Sent on initial connection. Contains the entire game state object (current level, all players, queue, etc.).
-- **`NEW_PLAYER(player_object)`:** Tells frontend to add a new player sprite.
-- **`SHOW_CHAT_BUBBLE(player_name, message)`:** Display a chat bubble over the player's sprite.
-- **`QUEUE_UPDATED(queue_array)`:** Provides the new list of names in the queue. (Frontend uses this to animate the line-up).
-- **`START_JUDGING(player_name)`:** Animate this player's sprite walking to the judge NPC.
-- **`JUDGE_RESULT(player_name, "correct" | "wrong")`:** Play the corresponding success or fail animation on that player.
-- **`LOAD_LEVEL(new_level_data, all_players)`:** Clear old level, render new one, move all players to start positions. (This message also implicitly revives everyone).
+### ai evaluation
+
+the game uses google gemini 2.5 flash to evaluate answers based on semantic meaning rather than exact text matching. this allows for:
+
+- different wording and phrasing
+- synonyms and alternative expressions
+- natural language understanding
+
+## architecture
+
+### tech stack
+
+- **runtime**: bun
+- **backend**: hono web framework with sse streaming
+- **frontend**: pixi.js for 2d rendering
+- **state management**: zustand
+- **ai**: google gemini 2.5 flash via vercel ai sdk
+- **browser automation**: playwright with persistent chromium context
+- **terminal ui**: opentui
+
+### project structure
+
+```
+src/
+├── assets/           # game sprites and fonts
+│   ├── walk-1.svg
+│   ├── walk-2.svg
+│   ├── dead.svg
+│   ├── background.svg
+│   └── WalterTurncoat-Regular.ttf
+├── components/       # react components for terminal ui
+│   └── last-action.tsx
+├── lib/             # core game logic and utilities
+│   ├── ai.ts        # gemini api integration
+│   ├── browser.ts   # playwright setup
+│   ├── game.ts      # game loop and message polling
+│   ├── levels.ts    # quiz level definitions
+│   └── types.ts     # typescript interfaces
+├── stores/          # zustand state management
+│   ├── game.ts      # game state and event system
+│   └── ui.ts        # ui state
+├── app.tsx          # terminal ui application
+├── frontend.ts      # pixi.js game client
+├── server.ts        # hono backend with sse
+└── main.tsx         # application entry point
+```
+
+### event system
+
+the game uses server-sent events (sse) to communicate between backend and frontend:
+
+- `game-state` - initial connection sync with full game state
+- `player-joined` - new player detected in chat
+- `new-message` - regular chat message (non-answer)
+- `answer-submitted` - player submitted an answer
+- `start-judging` - begin answer evaluation animation
+- `judge-result` - answer correctness result
+- `load-level` - transition to new level with revived players
+- `queue-updated` - current answer queue state
+
+## customization
+
+### adding levels
+
+edit `src/lib/levels.ts` to add new quiz questions:
+
+```typescript
+{
+  levelNumber: 6,
+  question: "your question here?",
+  correctAnswer: "detailed explanation of the correct answer",
+}
+```
+
+### modifying ai personality
+
+edit the prompt in `src/lib/ai.ts` to customize the ai's tone and evaluation style.
+
+## development
+
+### type checking
+
+```bash
+bun run typecheck
+```
+
+### formatting
+
+```bash
+bun run format
+```

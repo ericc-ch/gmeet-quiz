@@ -38,7 +38,7 @@ async function startGameLoop() {
         const isCorrect = await evaluateAnswer(
           gameStore.currentLevel.question,
           gameStore.currentLevel.correctAnswer,
-          currentGuess.answer
+          currentGuess.answer,
         );
 
         // Send result

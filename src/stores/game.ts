@@ -99,7 +99,9 @@ export const useGameStore = create<GameState>()((set, get) => ({
     set((state) => {
       const newListeners = new Set(state.eventListeners);
       newListeners.add(listener);
-      console.log(`Added event listener. Total listeners: ${newListeners.size}`);
+      console.log(
+        `Added event listener. Total listeners: ${newListeners.size}`,
+      );
       return { eventListeners: newListeners };
     }),
 
@@ -107,7 +109,9 @@ export const useGameStore = create<GameState>()((set, get) => ({
     set((state) => {
       const newListeners = new Set(state.eventListeners);
       newListeners.delete(listener);
-      console.log(`Removed event listener. Total listeners: ${newListeners.size}`);
+      console.log(
+        `Removed event listener. Total listeners: ${newListeners.size}`,
+      );
       return { eventListeners: newListeners };
     }),
 }));
