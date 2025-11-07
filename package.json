@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "format": "prettier --write .",
-    "start": "bun run src/main.tsx",
+    "start": "bun run --watch src/main.tsx",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -12,6 +12,7 @@
     "@opentui/react": "^0.1.36",
     "@tanstack/react-query": "^5.90.7",
     "hono": "^4.10.4",
+    "pixi.js": "^8.14.0",
     "playwright": "^1.56.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

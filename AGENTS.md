@@ -13,6 +13,7 @@
 - Use **Bun** instead of Node.js (no `node`, `npm`, `express`, `dotenv`, `ws`, `better-sqlite3`, `pg`, `ioredis`, `execa`)
 - Prefer Bun APIs: `Bun.serve()`, `Bun.file`, `bun:sqlite`, `Bun.redis`, `Bun.sql`, built-in `WebSocket`, `Bun.$\`cmd\``
 - Bun auto-loads `.env` files
+- **PixiJS:** Always check latest docs using context7 when working with PixiJS API to avoid deprecation warnings
 
 ## Code Style
 

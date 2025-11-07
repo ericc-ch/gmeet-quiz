@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { useGameStore } from "./stores/game.ts";
+import { getLevel, getTotalLevels } from "./lib/levels.ts";
 
 export const server = new Hono();
 
@@ -70,11 +71,23 @@ async function transitionToNextLevel() {
 
   gameStore.setGameStatus("LEVEL_TRANSITION");
 
-  const nextLevel = {
-    levelNumber: gameStore.currentLevel.levelNumber + 1,
-    correctAnswer: "",
-  };
-  gameStore.setCurrentLevel(nextLevel);
+  const nextLevelNumber = gameStore.currentLevel.levelNumber + 1;
+  const totalLevels = getTotalLevels();
+  
+  // Check if we've completed all levels
+  if (nextLevelNumber > totalLevels) {
+    // Game completed - restart from level 1
+    const firstLevel = getLevel(1);
+    if (firstLevel) {
+      gameStore.setCurrentLevel(firstLevel);
+    }
+  } else {
+    // Load next level
+    const nextLevel = getLevel(nextLevelNumber);
+    if (nextLevel) {
+      gameStore.setCurrentLevel(nextLevel);
+    }
+  }
 
   // Revive all players
   const allPlayers = Array.from(gameStore.players.values());
@@ -86,7 +99,7 @@ async function transitionToNextLevel() {
   gameStore.addEvent({
     type: "load-level",
     payload: {
-      level: nextLevel,
+      level: gameStore.currentLevel,
       players: Array.from(gameStore.players.values()),
     },
   });
@@ -96,6 +109,25 @@ async function transitionToNextLevel() {
 
 server.get("/events", async (c) => {
   return streamSSE(c, async (stream) => {
+    // Send initial game state on connection
+    const gameStore = useGameStore.getState();
+    const initialStateEvent = {
+      type: "game-state",
+      payload: {
+        gameStatus: gameStore.gameStatus,
+        currentLevel: gameStore.currentLevel,
+        players: Array.from(gameStore.players.values()),
+        guessingQueue: gameStore.guessingQueue,
+      },
+    };
+
+    console.log("Sending initial game state:", initialStateEvent);
+    await stream.writeSSE({
+      data: JSON.stringify(initialStateEvent),
+      event: "game-state",
+    });
+
+    // Continue with regular event broadcasting
     while (true) {
       const event = useGameStore.getState().getNextEvent();
 

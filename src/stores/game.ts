@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Player, Guess, Level, Message, GameEvent } from "../lib/types.ts";
+import { getLevel } from "../lib/levels.ts";
 
 interface GameState {
   gameStatus: "ACTIVE" | "LEVEL_TRANSITION";
@@ -24,8 +25,9 @@ interface GameState {
 
 export const useGameStore = create<GameState>()((set, get) => ({
   gameStatus: "ACTIVE",
-  currentLevel: {
+  currentLevel: getLevel(1) ?? {
     levelNumber: 1,
+    question: "",
     correctAnswer: "",
   },
   players: new Map(),

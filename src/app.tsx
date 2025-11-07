@@ -141,7 +141,7 @@ function Main() {
           }}
         >
           <text style={{ bg: "blue" }}>
-            <strong>Game Status: {gameState.gameStatus}</strong>
+            <strong>{JSON.stringify(gameState)}</strong>
           </text>
         </box>
       </box>

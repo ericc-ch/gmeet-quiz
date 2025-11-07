@@ -1,6 +1,11 @@
 export interface Player {
   name: string;
   isAlive: boolean;
+  velocityX?: number;
+  velocityY?: number;
+  targetX?: number;
+  targetY?: number;
+  speed?: number;
 }
 
 export interface Guess {
@@ -10,6 +15,7 @@ export interface Guess {
 
 export interface Level {
   levelNumber: number;
+  question: string;
   correctAnswer: string;
 }
 
@@ -28,4 +34,13 @@ export type GameEvent =
       payload: { playerName: string; result: "correct" | "wrong" };
     }
   | { type: "load-level"; payload: { level: Level; players: Player[] } }
-  | { type: "queue-updated"; payload: { queue: Guess[] } };
+  | { type: "queue-updated"; payload: { queue: Guess[] } }
+  | {
+      type: "game-state";
+      payload: {
+        gameStatus: "ACTIVE" | "LEVEL_TRANSITION";
+        currentLevel: Level;
+        players: Player[];
+        guessingQueue: Guess[];
+      };
+    };
