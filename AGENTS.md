@@ -32,3 +32,4 @@
 - Follow conventional commit style (type: scope)
 - Do not include descriptions
 - Keep messages concise
+- Break changes into smaller, focused commits rather than large ones
