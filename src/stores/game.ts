@@ -2,13 +2,15 @@ import { create } from "zustand";
 import type { Player, Guess, Level, Message, GameEvent } from "../lib/types.ts";
 import { getLevel } from "../lib/levels.ts";
 
+type EventListener = (event: GameEvent) => void;
+
 interface GameState {
   gameStatus: "ACTIVE" | "LEVEL_TRANSITION";
   currentLevel: Level;
   players: Map<string, Player>;
   guessingQueue: Guess[];
   messageHistory: Message[];
-  eventQueue: GameEvent[];
+  eventListeners: Set<EventListener>;
 
   setGameStatus: (status: "ACTIVE" | "LEVEL_TRANSITION") => void;
   setCurrentLevel: (level: Level) => void;
@@ -19,8 +21,9 @@ interface GameState {
   clearGuessingQueue: () => void;
   addMessage: (message: Message) => void;
   addMessages: (messages: Message[]) => void;
-  addEvent: (event: GameEvent) => void;
-  getNextEvent: () => GameEvent | undefined;
+  emitEvent: (event: GameEvent) => void;
+  addEventListener: (listener: EventListener) => void;
+  removeEventListener: (listener: EventListener) => void;
 }
 
 export const useGameStore = create<GameState>()((set, get) => ({
@@ -33,7 +36,7 @@ export const useGameStore = create<GameState>()((set, get) => ({
   players: new Map(),
   guessingQueue: [],
   messageHistory: [],
-  eventQueue: [],
+  eventListeners: new Set(),
 
   setGameStatus: (status) => set({ gameStatus: status }),
 
@@ -80,20 +83,31 @@ export const useGameStore = create<GameState>()((set, get) => ({
       messageHistory: [...state.messageHistory, ...messages],
     })),
 
-  addEvent: (event) =>
-    set((state) => ({
-      eventQueue: [event, ...state.eventQueue], // unshift to front
-    })),
-
-  getNextEvent: () => {
-    const currentQueue = get().eventQueue;
-    if (currentQueue.length === 0) return undefined;
-
-    const lastEvent = currentQueue[currentQueue.length - 1]; // get from back (FIFO)
-    set((state) => ({
-      eventQueue: state.eventQueue.slice(0, -1), // remove from back
-    }));
-
-    return lastEvent;
+  emitEvent: (event) => {
+    const listeners = get().eventListeners;
+    console.log(`Emitting event to ${listeners.size} listener(s):`, event);
+    listeners.forEach((listener) => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error("Error in event listener:", error);
+      }
+    });
   },
+
+  addEventListener: (listener) =>
+    set((state) => {
+      const newListeners = new Set(state.eventListeners);
+      newListeners.add(listener);
+      console.log(`Added event listener. Total listeners: ${newListeners.size}`);
+      return { eventListeners: newListeners };
+    }),
+
+  removeEventListener: (listener) =>
+    set((state) => {
+      const newListeners = new Set(state.eventListeners);
+      newListeners.delete(listener);
+      console.log(`Removed event listener. Total listeners: ${newListeners.size}`);
+      return { eventListeners: newListeners };
+    }),
 }));

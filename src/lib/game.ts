@@ -56,7 +56,7 @@ export async function startGame() {
             // Check if player exists, if not add them
             if (!gameStore.players.has(msg.user)) {
               gameStore.addPlayer(msg.user, { name: msg.user, isAlive: true });
-              gameStore.addEvent({
+              gameStore.emitEvent({
                 type: "player-joined",
                 payload: { user: msg.user },
               });
@@ -71,18 +71,18 @@ export async function startGame() {
               });
 
               // Add event for immediate SSE broadcast
-              gameStore.addEvent({
+              gameStore.emitEvent({
                 type: "answer-submitted",
                 payload: { user: msg.user, answer: msg.message.slice(1) },
               });
 
               // Update queue event for immediate broadcast
-              gameStore.addEvent({
+              gameStore.emitEvent({
                 type: "queue-updated",
                 payload: { queue: [...gameStore.guessingQueue] },
               });
             } else {
-              gameStore.addEvent({
+              gameStore.emitEvent({
                 type: "new-message",
                 payload: { user: msg.user, message: msg.message },
               });

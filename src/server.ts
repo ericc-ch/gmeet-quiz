@@ -25,7 +25,7 @@ async function startGameLoop() {
 
       if (currentGuess) {
         // Send start judging event
-        gameStore.addEvent({
+        gameStore.emitEvent({
           type: "start-judging",
           payload: { playerName: currentGuess.playerName },
         });
@@ -39,7 +39,7 @@ async function startGameLoop() {
           gameStore.currentLevel.correctAnswer.toLowerCase();
 
         // Send result
-        gameStore.addEvent({
+        gameStore.emitEvent({
           type: "judge-result",
           payload: {
             playerName: currentGuess.playerName,
@@ -54,7 +54,7 @@ async function startGameLoop() {
         } else {
           gameStore.updatePlayer(currentGuess.playerName, { isAlive: false });
           gameStore.guessingQueue.shift();
-          gameStore.addEvent({
+          gameStore.emitEvent({
             type: "queue-updated",
             payload: { queue: [...gameStore.guessingQueue] },
           });
@@ -93,19 +93,25 @@ async function transitionToNextLevel() {
     }
   }
 
-  // Revive all players
+  // Revive all players in a single batch
   const allPlayers = Array.from(gameStore.players.values());
-  allPlayers.forEach((player) => {
+  const revivedPlayers = allPlayers.map((player) => ({
+    ...player,
+    isAlive: true,
+  }));
+
+  // Update all players at once
+  revivedPlayers.forEach((player) => {
     gameStore.updatePlayer(player.name, { isAlive: true });
   });
 
-  // Send load level event with the new level
+  // Send load level event with the new level and revived players
   if (newLevel) {
-    gameStore.addEvent({
+    gameStore.emitEvent({
       type: "load-level",
       payload: {
         level: newLevel,
-        players: Array.from(gameStore.players.values()),
+        players: revivedPlayers,
       },
     });
   }
@@ -123,7 +129,7 @@ server.get("/events", async (c) => {
     // Send initial game state on connection
     const gameStore = useGameStore.getState();
     const initialStateEvent = {
-      type: "game-state",
+      type: "game-state" as const,
       payload: {
         gameStatus: gameStore.gameStatus,
         currentLevel: gameStore.currentLevel,
@@ -138,21 +144,31 @@ server.get("/events", async (c) => {
       event: "game-state",
     });
 
-    // Continue with regular event broadcasting
-    while (true) {
-      const event = useGameStore.getState().getNextEvent();
-
-      if (event) {
-        console.log("Broadcasting event:", event);
-
-        // Just broadcast, no processing
+    // Set up event listener for this SSE connection
+    const eventListener = async (event: any) => {
+      try {
+        console.log("Broadcasting event to client:", event);
         await stream.writeSSE({
           data: JSON.stringify(event),
           event: event.type,
         });
-      } else {
-        await stream.sleep(100);
+      } catch (error) {
+        console.error("Error broadcasting event:", error);
       }
+    };
+
+    // Register the listener
+    gameStore.addEventListener(eventListener);
+
+    // Keep connection alive and clean up on disconnect
+    try {
+      while (true) {
+        await stream.sleep(1000);
+      }
+    } finally {
+      // Remove listener when connection closes
+      gameStore.removeEventListener(eventListener);
+      console.log("SSE connection closed, listener removed");
     }
   });
 });
