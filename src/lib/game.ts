@@ -67,19 +67,19 @@ export async function startGame() {
               // Add to guessing queue for game loop
               gameStore.addToGuessingQueue({
                 playerName: msg.user,
-                answer: msg.message.slice(1)
+                answer: msg.message.slice(1),
               });
-              
+
               // Add event for immediate SSE broadcast
               gameStore.addEvent({
                 type: "answer-submitted",
                 payload: { user: msg.user, answer: msg.message.slice(1) },
               });
-              
+
               // Update queue event for immediate broadcast
               gameStore.addEvent({
                 type: "queue-updated",
-                payload: { queue: [...gameStore.guessingQueue] }
+                payload: { queue: [...gameStore.guessingQueue] },
               });
             } else {
               gameStore.addEvent({
@@ -115,5 +115,3 @@ export async function startGame() {
     );
   }
 }
-
-
