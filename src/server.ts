@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { useGameStore } from "./stores/game.ts";
 import { getLevel, getTotalLevels } from "./lib/levels.ts";
+import { cors } from "hono/cors";
 
 export const server = new Hono();
 
@@ -73,19 +74,22 @@ async function transitionToNextLevel() {
 
   const nextLevelNumber = gameStore.currentLevel.levelNumber + 1;
   const totalLevels = getTotalLevels();
-  
+
+  let newLevel;
   // Check if we've completed all levels
   if (nextLevelNumber > totalLevels) {
     // Game completed - restart from level 1
     const firstLevel = getLevel(1);
     if (firstLevel) {
       gameStore.setCurrentLevel(firstLevel);
+      newLevel = firstLevel;
     }
   } else {
     // Load next level
     const nextLevel = getLevel(nextLevelNumber);
     if (nextLevel) {
       gameStore.setCurrentLevel(nextLevel);
+      newLevel = nextLevel;
     }
   }
 
@@ -95,18 +99,25 @@ async function transitionToNextLevel() {
     gameStore.updatePlayer(player.name, { isAlive: true });
   });
 
-  // Send load level event
-  gameStore.addEvent({
-    type: "load-level",
-    payload: {
-      level: gameStore.currentLevel,
-      players: Array.from(gameStore.players.values()),
-    },
-  });
+  // Send load level event with the new level
+  if (newLevel) {
+    gameStore.addEvent({
+      type: "load-level",
+      payload: {
+        level: newLevel,
+        players: Array.from(gameStore.players.values()),
+      },
+    });
+  }
 
   gameStore.setGameStatus("ACTIVE");
 }
 
+server.use(
+  cors({
+    origin: "*",
+  }),
+);
 server.get("/events", async (c) => {
   return streamSSE(c, async (stream) => {
     // Send initial game state on connection
