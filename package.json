@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "format": "prettier --write .",
     "start": "bun run src/main.tsx",
-    "typecheck": "tsc",
-    "format": "prettier --write ."
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@opentui/core": "^0.1.36",
